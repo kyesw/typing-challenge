@@ -1,0 +1,23 @@
+[
+  {
+    "text": "Amazon Bedrock powers generative AI for more than 100,000 organizations worldwide—from startups to global enterprises across every industry. It provides the proven infrastructure and comprehensive capabilities to confidently build applications and agents that work in production with the flexibility, enterprise security, and proven scalability you need to innovate boldly and deliver AI that drives real business impact.",
+    "difficulty": "easy",
+    "language": "en"
+  },{
+    "text": "In the cloud, Amazon EKS automatically manages the availability and scalability of the Kubernetes control plane nodes responsible for scheduling containers, managing application availability, storing cluster data, and other key tasks. With Amazon EKS, you can take advantage of all the performance, scale, reliability, and availability of AWS infrastructure, as well as integrations with AWS networking and security services.",
+    "difficulty": "easy",
+    "language": "en"
+  },{
+    "text": "Kiro is an agentic coding service that works alongside you to turn prompts into detailed specs, then into working code, docs, and tests. Kiro’s agents help you solve challenging problems and automate tasks like generating documentation and unit tests. Kiro is built on Amazon Bedrock, a managed service for building generative AI applications that uses foundation models from Amazon and third party AI companies.",
+    "difficulty": "easy",
+    "language": "en"
+  },{
+    "text": "Amazon Bedrock AgentCore is an agentic platform for building, deploying, and operating effective agents securely at scale-no infrastructure management needed. Accelerate agents to production with intelligent memory and a gateway to enable secure, controlled access to tools and data. Run agents with enterprise-grade security and dynamic scaling. AgentCore services work together or independently with any framework and model.",
+    "difficulty": "easy",
+    "language": "en"
+  },{
+    "text": "Your work is scattered across dozens of tools. Quick is an AI assistant for work that brings it all together—connecting Slack, databases, and documents in one place. It learns what matters to you and your team, grounds every answer in your real business data, and goes beyond answers: scheduling, building deliverables, creating dashboards, and acting on your behalf. One person's insight becomes the whole team's advantage.",
+    "difficulty": "easy",
+    "language": "en"
+  }
+]

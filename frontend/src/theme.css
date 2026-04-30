@@ -1,0 +1,643 @@
+/*
+ * Global dark theme — Kiro-inspired design language.
+ *
+ * Sections:
+ *   1. Custom Properties (:root palette)
+ *   2. Reset & Body
+ *   3. Typography
+ *   4. Layout
+ *   5. Buttons
+ *   6. Inputs
+ *   7. Alerts
+ *   8. Links / Secondary Links
+ *   9. Nickname Page
+ *  10. Ready Page
+ *  11. Play Page (countdown)
+ *  12. Results Page
+ *  13. Dashboard Page
+ *  14. Responsive
+ *  15. Animations
+ *  16. Crown Animation
+ */
+
+/* ===================================================================
+   1. Custom Properties
+   =================================================================== */
+
+:root {
+  /* Backgrounds — kiro.dev uses a deep near-black with a cool undertone */
+  --bg-primary: #09090b;
+  --bg-surface: #18181b;
+
+  /* Text — bright white primary, zinc-toned secondary */
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+
+  /* Accents — kiro.dev's signature purple for CTAs, teal for secondary accents */
+  --accent-purple: #a855f7;
+  --accent-violet: #7c3aed;
+  --accent-blue: #38bdf8;
+  --accent-teal: #2dd4bf;
+  --accent-green: #4ade80;
+  --accent-red: #f87171;
+  --accent-amber: #fbbf24;
+
+  /* Borders — subtle zinc borders */
+  --border-default: #27272a;
+  --border-accent: #a855f7;
+
+  /* Surfaces */
+  --surface-radius: 12px;
+}
+
+/* ===================================================================
+   2. Reset & Body
+   =================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
+    "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+/* ===================================================================
+   3. Typography
+   =================================================================== */
+
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+  line-height: 1.3;
+}
+
+p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 1rem;
+}
+
+label {
+  display: block;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+/* ===================================================================
+   4. Layout
+   =================================================================== */
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in 200ms ease-out;
+}
+
+/* ===================================================================
+   5. Buttons
+   =================================================================== */
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-violet));
+  color: var(--text-primary);
+  border: none;
+  border-radius: 999px;
+  min-width: 200px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 150ms ease, box-shadow 200ms ease, opacity 150ms ease, transform 150ms ease;
+  line-height: 1.4;
+}
+
+button:hover {
+  filter: brightness(1.15);
+  box-shadow: 0 0 24px rgba(168, 85, 247, 0.4), 0 0 48px rgba(124, 58, 237, 0.2);
+  transform: translateY(-1px);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+}
+
+/* ===================================================================
+   6. Inputs
+   =================================================================== */
+
+input[type="text"],
+input:not([type]) {
+  width: 100%;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+input[type="text"]:focus,
+input:not([type]):focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+  outline: none;
+}
+
+/* ===================================================================
+   7. Alerts
+   =================================================================== */
+
+[role="alert"] {
+  background-color: rgba(248, 113, 113, 0.1);
+  border-left: 3px solid var(--accent-red);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  animation: fade-in 200ms ease-out;
+}
+
+/* ===================================================================
+   8. Links / Secondary Links
+   =================================================================== */
+
+a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: inherit;
+  transition: color 150ms ease, text-decoration 150ms ease;
+}
+
+a:hover {
+  color: var(--accent-purple);
+  text-decoration: underline;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ===================================================================
+   9. Nickname Page
+   =================================================================== */
+
+/* Surface card wrapping the nickname form */
+form {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--surface-radius);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Center the heading and intro paragraph above the form */
+main > h1,
+main > p {
+  text-align: center;
+}
+
+/* ===================================================================
+   10. Ready Page
+   =================================================================== */
+
+/* Conflict dialog surface */
+[role="alertdialog"] {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--surface-radius);
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+}
+
+/* Resume/Restart buttons inside the conflict dialog as secondary links */
+[role="alertdialog"] button {
+  background: none;
+  color: var(--text-secondary);
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+[role="alertdialog"] button:hover {
+  color: var(--accent-teal);
+  text-decoration: underline;
+  filter: none;
+  box-shadow: none;
+}
+
+/* ===================================================================
+   11. Play Page (countdown + ghost input)
+   =================================================================== */
+
+/* Let the play page <main> use 75% of the viewport width */
+body:has([data-testid="play-prompt"]) main,
+body:has([data-testid="play-countdown"]) main,
+body:has([data-testid="play-loading"]) main,
+body:has([data-testid="play-beginning"]) main,
+body:has([data-testid="play-submitting"]) main {
+  max-width: 75vw;
+}
+
+[data-testid="play-countdown"] {
+  font-size: 4rem;
+  color: var(--accent-purple);
+  font-weight: 700;
+}
+
+/* Ghost input — visually hidden but still captures keystrokes.
+   The prompt surface IS the typing area; no visible input field. */
+.ghost-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  padding: 0;
+  border: none;
+  pointer-events: none;
+}
+
+/* Screen-reader-only utility — hides visually but keeps the element
+   accessible to assistive technology. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ===================================================================
+   12. Results Page
+   =================================================================== */
+
+/* Stat card grid — dl > div structure */
+[data-testid="results-stats"] {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 0;
+}
+
+[data-testid="results-stats"] > div {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--surface-radius);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+[data-testid="results-stats"] dt {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.25rem;
+}
+
+[data-testid="results-stats"] dd {
+  color: var(--text-primary);
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* "Play again" is a Primary_Button (inherits default button styles).
+   "View leaderboard" is a Secondary_Link (inherits default <a> styles). */
+nav[aria-label="After-game actions"] {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* ===================================================================
+   13. Dashboard Page
+   =================================================================== */
+
+/*
+ * Dashboard — designed for wall-mounted monitors viewed from ~5 m.
+ * Uses the full viewport width and significantly larger type so the
+ * leaderboard is legible at a distance.
+ */
+
+/* Let the dashboard <main> use the full screen width */
+body:has([data-testid="dashboard-table"]) main,
+body:has([data-testid="dashboard-loading"]) main,
+body:has([data-testid="dashboard-empty"]) main,
+body:has([data-testid="dashboard-error"]) main {
+  max-width: 100%;
+  padding: 2.5rem 3rem;
+}
+
+/* Dashboard heading — big and bold for distance readability */
+body:has([data-testid="dashboard-table"]) main > h1,
+body:has([data-testid="dashboard-loading"]) main > h1,
+body:has([data-testid="dashboard-empty"]) main > h1,
+body:has([data-testid="dashboard-error"]) main > h1 {
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Leaderboard table — glassmorphism card with gradient border */
+[data-testid="dashboard-table"] {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(168, 85, 247, 0.04) 0%,
+    var(--bg-surface) 15%,
+    var(--bg-surface) 100%
+  );
+  border: 1px solid var(--border-default);
+  border-radius: var(--surface-radius);
+  overflow: hidden;
+  box-shadow:
+    0 0 40px rgba(168, 85, 247, 0.06),
+    0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Table header — purple-tinted with a bottom glow line */
+[data-testid="dashboard-table"] thead tr {
+  background: linear-gradient(
+    90deg,
+    rgba(168, 85, 247, 0.12) 0%,
+    rgba(124, 58, 237, 0.08) 50%,
+    rgba(168, 85, 247, 0.12) 100%
+  );
+}
+
+[data-testid="dashboard-table"] th {
+  color: var(--accent-purple);
+  text-transform: uppercase;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+[data-testid="dashboard-table"] td {
+  padding: 1.1rem 1.5rem;
+  color: var(--text-primary);
+  font-size: 1.8rem;
+}
+
+[data-testid="dashboard-table"] tbody tr {
+  border-bottom: 1px solid var(--border-default);
+  transition: background-color 200ms ease, transform 200ms ease;
+}
+
+[data-testid="dashboard-table"] tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* Row hover — purple glow lift */
+[data-testid="dashboard-table"] tbody tr:hover {
+  background-color: rgba(168, 85, 247, 0.06);
+}
+
+/* Top 3 rank medals — emoji + colored rank text */
+[data-testid="dashboard-table"] tbody tr:nth-child(1) [data-testid="dashboard-cell-rank"] {
+  color: #fbbf24;
+  font-weight: 800;
+  font-size: 2.2rem;
+}
+
+[data-testid="dashboard-table"] tbody tr:nth-child(1) [data-testid="dashboard-cell-rank"]::before {
+  content: "👑 ";
+}
+
+[data-testid="dashboard-table"] tbody tr:nth-child(2) [data-testid="dashboard-cell-rank"] {
+  color: #c0c0c0;
+  font-weight: 700;
+  font-size: 2rem;
+}
+
+[data-testid="dashboard-table"] tbody tr:nth-child(2) [data-testid="dashboard-cell-rank"]::before {
+  content: "🥈 ";
+}
+
+[data-testid="dashboard-table"] tbody tr:nth-child(3) [data-testid="dashboard-cell-rank"] {
+  color: #cd7f32;
+  font-weight: 700;
+  font-size: 2rem;
+}
+
+[data-testid="dashboard-table"] tbody tr:nth-child(3) [data-testid="dashboard-cell-rank"]::before {
+  content: "🥉 ";
+}
+
+/* Top player row — subtle gold left accent */
+[data-testid="dashboard-table"] tbody tr:nth-child(1) {
+  background: linear-gradient(
+    90deg,
+    rgba(251, 191, 36, 0.08) 0%,
+    transparent 40%
+  );
+}
+
+/* Nickname column — slightly brighter for emphasis */
+[data-testid="dashboard-cell-nickname"] {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Points column — accent color to draw the eye */
+[data-testid="dashboard-cell-points"] {
+  color: var(--accent-purple);
+  font-weight: 700;
+}
+
+/* Right-align numeric columns: WPM, Accuracy, Points */
+[data-testid="dashboard-cell-wpm"],
+[data-testid="dashboard-cell-accuracy"],
+[data-testid="dashboard-cell-points"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Also right-align the corresponding header cells */
+[data-testid="dashboard-table"] th:nth-child(3),
+[data-testid="dashboard-table"] th:nth-child(4),
+[data-testid="dashboard-table"] th:nth-child(5) {
+  text-align: right;
+}
+
+/* Empty state — more inviting */
+[data-testid="dashboard-empty"] {
+  text-align: center;
+  font-size: 2rem;
+  color: var(--text-secondary);
+  padding: 3rem 1rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--surface-radius);
+}
+
+/* Loading state — readable from distance */
+[data-testid="dashboard-loading"] {
+  font-size: 2rem;
+}
+
+/* ===================================================================
+   14. Responsive
+   =================================================================== */
+
+/* Breakpoint_Medium: 768px */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+}
+
+/* Breakpoint_Small: 640px */
+@media (max-width: 640px) {
+  main {
+    padding: 1.5rem 1rem;
+  }
+
+  /* Stack stat cards to single column */
+  [data-testid="results-stats"] {
+    grid-template-columns: 1fr;
+  }
+
+  /* Dashboard table: keep large sizes even on small viewports since
+     the dashboard is designed for wall-mounted kiosk displays. */
+
+  /* Ensure 44×44px minimum touch targets */
+  button,
+  input[type="text"],
+  input:not([type]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ===================================================================
+   15. Animations
+   =================================================================== */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  main {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+  }
+
+  /* Preserve essential state indicators */
+  .char--current {
+    animation: none;
+  }
+}
+
+/* ===================================================================
+   16. Crown Animation — new top player celebration (Requirement 12)
+   =================================================================== */
+
+@keyframes crown-glow {
+  0% {
+    box-shadow: inset 0 0 0 0 rgba(240, 192, 64, 0);
+    background-color: transparent;
+  }
+  15% {
+    box-shadow: inset 0 0 20px 4px rgba(240, 192, 64, 0.3);
+    background-color: rgba(240, 192, 64, 0.08);
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 rgba(240, 192, 64, 0);
+    background-color: transparent;
+  }
+}
+
+.crown-glow {
+  animation: crown-glow 2s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crown-glow {
+    animation: none;
+    border-left: 3px solid #f0c040;
+    transition: border-left-color 2s ease-out;
+  }
+}

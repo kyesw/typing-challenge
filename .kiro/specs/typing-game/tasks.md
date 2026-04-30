@@ -1,0 +1,291 @@
+# Implementation Plan: Typing Game
+
+## Overview
+
+This plan implements the Typing Game as a Python + FastAPI backend (SQLite persistence, Hypothesis + pytest for tests) and a React + Vite + TypeScript frontend (with Vitest for component tests). Tasks are ordered for incremental progress: data models and validation first, then services, then REST API, then the client, and finally end-to-end wiring. The Dashboard_Client keeps itself current by polling `GET /leaderboard` once per second; no push channel is used. Each task references the requirement IDs and correctness property IDs it covers.
+
+Convention:
+- Sub-tasks postfixed with `*` are optional (typically unit/integration tests that supplement required property-based tests).
+- Property-based test tasks are **required** (no `*`) per the user directive for: nickname validation, scoring bounds, points determinism, leaderboard ordering, game state machine, and timeout enforcement.
+
+## Tasks
+
+- [x] 1. Set up project structure, tooling, and shared types
+  - [x] 1.1 Scaffold backend project
+    - Create `backend/` with `pyproject.toml`, `app/` package, `tests/` directory
+    - Add FastAPI, uvicorn, SQLAlchemy (or sqlite3), pydantic, hypothesis, pytest, pytest-asyncio, httpx
+    - Configure `app/config.py` with env-driven settings (session TTL, max game duration, rate limits, prompt selection policy)
+    - _Requirements: 7.5, 9.1, 14.1, 14.2_
+  - [x] 1.2 Scaffold frontend project
+    - Create `frontend/` with Vite + React + TypeScript template
+    - Add Vitest, @testing-library/react, @testing-library/jest-dom
+    - Set up routing (react-router) with placeholder routes `/`, `/ready`, `/play/:gameId`, `/results/:gameId`, `/dashboard`
+    - _Requirements: 1.1, 2.1, 3.1, 4.7, 6.1_
+  - [x] 1.3 Define shared error response contract
+    - Implement backend `ApiError` model (code, message, details) and FastAPI exception handlers mapping to 400/401/404/409/429
+    - Mirror the `ApiError` shape in a frontend `src/api/types.ts`
+    - _Requirements: 1.7, 1.8, 2.6, 7.3, 9.2, 12.2, 14.3_
+
+- [x] 2. Implement data models, persistence, and validation
+  - [x] 2.1 Implement Player, Prompt, Game, Score SQLAlchemy models and migrations
+    - Tables: `players(id, nickname, nickname_ci UNIQUE, created_at, session_token, session_expires_at)`, `prompts(id, text, difficulty, language)`, `games(id, player_id, prompt_id, status, started_at, ended_at)`, `scores(id, game_id UNIQUE, player_id, wpm, accuracy, points, created_at)`
+    - Add indexes for leaderboard query (`scores.player_id`, `scores.points`, `scores.created_at`)
+    - _Requirements: 1.3, 2.3, 4.4, 4.5, 8.7, 11.2, 16.2_
+  - [x] 2.2 Implement nickname validator (`app/domain/nickname.py`)
+    - Pure function `validate_nickname(s) -> Ok | LengthError | CharsetError`
+    - Length `[2, 20]`; allowed chars `[A-Za-z0-9 _-]`
+    - _Requirements: 1.5, 1.6_
+  - [x] 2.3 Write property-based test for nickname validation (Hypothesis)
+    - **Property 1: Nickname validation matches the stated rules**
+    - **Validates: Requirements 1.5, 1.6, 1.7**
+    - Generate arbitrary unicode strings; assert acceptance iff length in `[2,20]` AND charset matches AND no case-insensitive collision with an injected active-player set
+    - _Requirements: 1.5, 1.6, 1.7_
+  - [x] 2.4 Implement prompt validator and seed loader
+    - Reject prompts whose `text` is empty or length outside `[100, 500]`; constrain `difficulty` to `{easy, medium, hard}` when present
+    - Provide `seed_prompts.json` with 20+ valid prompts and a loader invoked at startup
+    - _Requirements: 11.2, 11.3, 11.4_
+  - [ ]* 2.5 Write property-based test for prompt validity
+    - **Property 15: Prompt validity**
+    - **Validates: Requirements 11.2, 11.3, 11.4**
+  - [ ]* 2.6 Unit tests for data model constraints
+    - endedAt > startedAt invariant, unique `scores.game_id`, nickname case-insensitive uniqueness
+    - _Requirements: 4.4, 4.5, 8.7, 1.7_
+
+- [x] 3. Implement Player_Service and session tokens
+  - [x] 3.1 Implement `PlayerService.register(nickname) -> Player`
+    - Validates nickname, checks case-insensitive uniqueness among active players (session not expired), issues opaque `session_token` (secrets.token_urlsafe) bound to `player_id` with `session_expires_at = now + TTL`
+    - Persist only fields defined in the Player data model
+    - _Requirements: 1.3, 7.1, 7.5, 16.1, 16.2_
+  - [x] 3.2 Implement `PlayerService.authorize(token) -> player_id | Unauthorized`
+    - Reject missing/unknown/expired tokens
+    - _Requirements: 7.2, 7.3, 7.5_
+  - [x] 3.3 Write property-based test for registration output well-formedness
+    - **Property 2: Successful registration produces a well-formed Player and bound Session_Token**
+    - **Validates: Requirements 1.3, 7.1**
+    - For any accepted nickname, the produced Player has unique id, nickname preserved, createdAt set, sessionToken resolves to exactly that playerId
+  - [x] 3.4 Write property-based test for session token authorization
+    - **Property 3: Session token authorization on protected endpoints**
+    - **Validates: Requirements 7.2, 7.3, 7.5**
+    - Over arbitrary sequences of register/advance-clock/revoke events, assert `authorize` returns Unauthorized iff token is missing, unknown, or expired
+  - [ ]* 3.5 Write unit tests for Player record minimality
+    - **Property 20: Player record is limited to the data model**
+    - **Validates: Requirements 16.1, 16.2**
+
+- [x] 4. Implement Game_Service and state machine
+  - [x] 4.1 Implement game state machine helpers (`app/domain/game_state.py`)
+    - Pure function `transition(current, event) -> new_status | Invalid`
+    - Allowed transitions: `pending→in_progress`, `in_progress→completed`, `pending→abandoned`, `in_progress→abandoned`
+    - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+  - [x] 4.2 Implement `GameService.create_game(player_id)`
+    - Reject if player already has an `in_progress` Game (return conflict with existing `gameId`)
+    - Select prompt via Prompt_Repository policy, create Game with status `pending`, return `(game_id, prompt_text, started_at)` where `started_at` is reserved server clock for typing phase start
+    - _Requirements: 2.3, 2.4, 2.6, 8.1, 8.6, 11.1_
+  - [x] 4.3 Implement `GameService.begin_typing(game_id)`
+    - Transition `pending → in_progress`, record `started_at = server_now()`
+    - _Requirements: 3.2, 8.2, 15.1_
+  - [x] 4.4 Implement `GameService.complete(game_id, typed_text)`
+    - Verify status is `in_progress`; set `ended_at = server_now()`; enforce `ended_at > started_at`
+    - Reject with timeout error if `ended_at - started_at > Maximum_Game_Duration` and transition to `abandoned`
+    - Otherwise delegate score computation to Scoring_Service and transition `in_progress → completed` atomically with Score persistence
+    - _Requirements: 3.6, 4.4, 4.5, 8.3, 8.7, 9.2, 15.1, 15.2_
+  - [x] 4.5 Implement timeout sweeper
+    - Background task (asyncio) that scans `in_progress` Games every N seconds; transitions to `abandoned` when elapsed exceeds Maximum_Game_Duration
+    - _Requirements: 9.1, 9.4_
+  - [x] 4.6 Write property-based test for the game state machine
+    - **Property 12: Game state machine only allows defined transitions**
+    - **Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5**
+    - Generate arbitrary event sequences; assert the produced status sequence only contains allowed transitions starting from `pending`
+  - [x] 4.7 Write property-based test for at-most-one in-progress game per player
+    - **Property 13: At most one in-progress game per player**
+    - **Validates: Requirements 2.6, 8.6**
+    - Interleave create/transition/submit events across a fixed player; assert invariant and that `create_game` conflicts include existing `gameId`
+  - [x] 4.8 Write property-based test for timeout enforcement
+    - **Property 14: Game timeout enforcement**
+    - **Validates: Requirements 9.1, 9.2, 9.4**
+    - Using a controllable clock, assert that any submission after Maximum_Game_Duration is rejected and the Game is `abandoned`
+
+- [x] 5. Implement Scoring_Service
+  - [x] 5.1 Implement pure scoring functions (`app/domain/scoring.py`)
+    - `compute_wpm(typed_text, prompt, elapsed_seconds) -> float` (guaranteed `>= 0`; define WPM as correct_chars/5 / minutes, clamped at 0 when elapsed is 0)
+    - `compute_accuracy(typed_text, prompt) -> float` in `[0, 100]`
+    - `compute_points(wpm, accuracy) -> int` deterministic pure function (e.g., `round(wpm * accuracy / 100 * 10)`)
+    - _Requirements: 4.1, 4.2, 4.3_
+  - [x] 5.2 Implement `ScoringService.record_score(game)` using server-measured elapsed time
+    - Input: Game with `started_at`, `ended_at`, typed text; compute score using only server-measured elapsed (`ended_at - started_at`)
+    - Persist exactly one Score per Game (unique constraint on `score.game_id`)
+    - _Requirements: 3.6, 4.4, 4.5, 15.1, 15.2_
+  - [x] 5.3 Write property-based test for WPM non-negativity
+    - **Property 4: WPM is non-negative**
+    - **Validates: Requirement 4.1**
+  - [x] 5.4 Write property-based test for accuracy bounds
+    - **Property 5: Accuracy is in [0, 100]**
+    - **Validates: Requirement 4.2**
+  - [x] 5.5 Write property-based test for points determinism
+    - **Property 6: Points derivation is deterministic**
+    - **Validates: Requirement 4.3**
+    - Over arbitrary `(wpm, accuracy)` pairs, repeated invocations produce identical outputs
+  - [x] 5.6 Write property-based test for server-authoritative timing
+    - **Property 7: Server-authoritative timing**
+    - **Validates: Requirements 3.6, 15.1, 15.2**
+    - Assert score is invariant when the client-supplied `elapsed` is perturbed arbitrarily (only server-measured elapsed matters)
+  - [x] 5.7 Write property-based test for exactly one Score per completed Game
+    - **Property 8: Exactly one Score per completed Game with consistent end state**
+    - **Validates: Requirements 4.4, 4.5, 8.3, 8.7**
+    - Over arbitrary submission sequences (including retries), assert at most one Score per gameId and `status == completed` with `endedAt > startedAt`
+
+- [x] 6. Implement Leaderboard derivation
+  - [x] 6.1 Implement `LeaderboardService.build_snapshot()`
+    - Aggregate per-player best points/wpm/accuracy and earliest Score createdAt for that best
+    - Order by `bestPoints desc, bestWpm desc, earliest createdAt asc`; assign contiguous ranks `1..N`
+    - Recompute on each `GET /leaderboard`; no cache (lounge scale keeps this cheap)
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
+  - [x] 6.3 Write property-based test for leaderboard aggregation invariant
+    - **Property 9: Leaderboard aggregation invariant**
+    - **Validates: Requirements 5.1, 5.2**
+  - [x] 6.4 Write property-based test for leaderboard ordering and rank invariant
+    - **Property 10: Leaderboard ordering and rank invariant**
+    - **Validates: Requirements 5.3, 5.4**
+    - Generate arbitrary Score sets; assert ordering, tie-breakers, and contiguous rank sequence
+  - [x] 6.5 Write property-based metamorphic test for leaderboard update on new Score
+    - **Property 11: Leaderboard update reflects new Scores (metamorphic)**
+    - **Validates: Requirement 5.6**
+
+- [x] 7. Checkpoint - Domain layer green
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 8. Implement Backend_API REST endpoints
+  - [x] 8.1 `POST /players` — register a nickname
+    - Validate input, call `PlayerService.register`, return `{playerId, sessionToken}`; return 400 for validation, 409 for duplicate
+    - _Requirements: 1.2, 1.3, 1.5, 1.6, 1.7, 1.8_
+  - [x] 8.2 `POST /games` — start a game (auth required)
+    - Auth via `Authorization: Bearer <sessionToken>`; on conflict return 409 with existing `gameId`
+    - Response: `{gameId, prompt, startAt}`
+    - _Requirements: 2.2, 2.3, 2.4, 2.6, 7.2_
+  - [x] 8.3 `POST /games/{gameId}/begin` — mark typing phase started (auth required)
+    - Transitions Game to `in_progress` and records server `startedAt`
+    - _Requirements: 3.2, 8.2, 15.1_
+  - [x] 8.4 `POST /games/{gameId}/result` — submit final text (auth required)
+    - Compute via Scoring_Service; return `{wpm, accuracy, points, rank}`; reject with 409/410 when timed out
+    - _Requirements: 3.5, 3.6, 4.6, 4.7, 9.2_
+  - [x] 8.5 `GET /leaderboard` — current snapshot
+    - _Requirements: 5.6, 5.7_
+  - [x] 8.6 `GET /games/{gameId}` — fetch game metadata
+    - Return 404 for unknown `gameId`
+    - _Requirements: 12.1, 12.2_
+  - [x] 8.7 Wire session-token dependency across protected endpoints
+    - FastAPI dependency `require_player` returning `player_id`; return 401 for invalid/expired
+    - _Requirements: 7.2, 7.3_
+  - [ ]* 8.8 Unit tests for endpoint happy paths and documented error responses
+    - _Requirements: 1.7, 1.8, 2.6, 7.3, 9.2, 12.2_
+
+- [x] 9. Implement rate limiting and input sanitization at the edge
+  - [x] 9.1 Implement in-process token-bucket rate limiter keyed by source IP (and by playerId for `POST /games`)
+    - Applied to `POST /players` (per IP) and `POST /games` (per IP and per playerId)
+    - Over-limit requests return 429 and perform no side effects (no Player, no Game created)
+    - _Requirements: 14.1, 14.2, 14.3_
+  - [x] 9.2 Write property-based test for rate limiting without side effects
+    - **Property 19: Rate-limited endpoints reject over-limit requests without side effects**
+    - **Validates: Requirements 14.1, 14.2, 14.3**
+  - [x] 9.3 Enforce nickname validation at the API boundary (reject before touching DB)
+    - _Requirements: 13.3, 1.5, 1.6_
+  - [x] 9.4 Typed-text length guard (bounded by prompt length + small slack) to prevent abuse
+    - _Requirements: 13.2_
+
+- [x] 10. Expose leaderboard snapshot for dashboard polling and remove unused realtime plumbing
+  - [x] 10.1 Ensure `GET /leaderboard` is suitable for 1 Hz polling from the Dashboard_Client
+    - Confirm the endpoint recomputes the snapshot from the Scores table on each call (no cache — lounge scale keeps this cheap)
+    - Remove any `Cache-Control` / `Pragma` response headers and their tests; the v1 deployment is a single backend with no proxy or CDN in front, and browsers do not cache a `fetch()` GET without freshness hints
+    - _Requirements: 6.1, 6.2_
+  - [x] 10.2 Remove the unused `EventPublisher` plumbing from the backend
+    - Delete `app/services/events.py` (`EventPublisher` Protocol and `NullEventPublisher`)
+    - Remove `event_publisher` parameters and `publish_game_event` / `publish_leaderboard_update` call sites from `ScoringService`, `GameService`, and `TimeoutSweeper`
+    - Remove the `get_event_publisher` dependency, the `app.state.event_publisher` wiring in `app/main.py`, and any test fakes that exist only to satisfy the removed parameter
+    - Drop `websockets` from `backend/pyproject.toml`; update `backend/README.md` to drop the "FastAPI + WebSocket" phrasing
+    - Re-run the backend test suite to confirm no references remain
+    - _Requirements: 6.1, 6.2_
+  - [ ]* 10.3 Load test `GET /leaderboard` under sustained 1 Hz polling from multiple dashboard clients
+    - Confirm latency and CPU stay flat as the number of dashboards grows to the expected lounge scale
+    - _Requirements: 6.2_
+
+- [x] 11. Checkpoint - Backend API green
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 12. Implement Web_Client player flow
+  - [x] 12.1 API client module (`src/api/client.ts`)
+    - Fetch wrapper attaching `Authorization: Bearer <sessionToken>` from local storage; on 401, clear state and redirect to `/`
+    - _Requirements: 7.4_
+  - [x] 12.2 Nickname page (`/`)
+    - Client-side validation mirroring server rules; submit to `POST /players`; on success navigate to `/ready`; render inline error on 400/409
+    - _Requirements: 1.1, 1.2, 1.4, 1.5, 1.6, 1.8_
+  - [x] 12.3 Ready page (`/ready`)
+    - Start button calls `POST /games`; navigates to `/play/:gameId`; handles 409 conflict by offering resume/abandon
+    - _Requirements: 2.1, 2.2, 2.5, 2.7_
+  - [x] 12.4 Countdown + Typing page (`/play/:gameId`)
+    - Countdown 3→2→1; then POST `/games/{id}/begin`, reveal prompt + input
+    - Capture keystrokes locally, mark correct/incorrect chars without per-keystroke server calls
+    - Submit `POST /games/{id}/result` on completion with typed text and client-observed elapsed (server ignores)
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+  - [x] 12.5 Results page (`/results/:gameId`)
+    - Display `wpm`, `accuracy`, `points`, `rank` from the result response
+    - _Requirements: 4.6, 4.7_
+  - [x] 12.6 Timeout handling UX
+    - On submission rejection with timeout code, show "time's up" and route to `/ready`
+    - _Requirements: 9.3_
+  - [x] 12.7 Network-loss resilience during typing
+    - Continue local timer on disconnect; buffer submission and retry on reconnect; on `abandoned` response, show error and offer new game
+    - _Requirements: 10.1, 10.2, 10.3, 10.4_
+  - [x] 12.8 Safe rendering of untrusted text (nickname, typed content)
+    - Use React's default text interpolation (no `dangerouslySetInnerHTML`); add a linter rule forbidding it
+    - _Requirements: 13.1, 13.2_
+  - [x] 12.9 Write property-based test for safe rendering
+    - **Property 18: Safe rendering of untrusted text**
+    - **Validates: Requirements 13.1, 13.2**
+    - Using fast-check via Vitest, render arbitrary strings as nickname/typed content; assert the DOM contains no executable `<script>` nodes and no attribute injection
+  - [ ]* 12.10 Component tests (Vitest + Testing Library)
+    - Nickname validation UX, Ready-to-Play transition, Typing feedback highlights, Results rendering
+    - _Requirements: 1.8, 2.1, 3.3, 4.7_
+
+- [x] 13. Implement Dashboard_Client
+  - [x] 13.1 `/dashboard` route
+    - On mount, call `GET /leaderboard` for the initial snapshot and render it
+    - _Requirements: 6.1_
+  - [x] 13.2 Render top-N rows with required fields
+    - Columns: `nickname`, `bestWpm`, `bestAccuracy`, `bestPoints`
+    - _Requirements: 6.1_
+  - [x] 13.3 Poll `GET /leaderboard` every 1 second while the route is mounted
+    - Use `setInterval` (cleared on unmount) or an equivalent timer primitive; re-render from each successful snapshot
+    - On a failed poll, keep the last successful snapshot on screen and retry on the next tick
+    - _Requirements: 6.2, 6.3_
+  - [x] 13.4 Write component property test for required leaderboard fields
+    - **Property 16: Dashboard render contains required fields**
+    - **Validates: Requirement 6.1**
+    - For arbitrary leaderboard snapshots, assert each rendered row contains nickname, bestWpm, bestAccuracy, bestPoints
+  - [ ]* 13.5 Component test for polling cadence and transient-failure behavior
+    - Using fake timers, assert a second `GET /leaderboard` fires ~1s after mount and that a failed poll leaves the prior snapshot rendered
+    - _Requirements: 6.2, 6.3_
+
+- [x] 14. End-to-end integration tests
+  - [x] 14.1 Backend integration: register → start → begin → submit → leaderboard updated
+    - Spin up FastAPI via httpx AsyncClient; run the full flow and assert response payloads and leaderboard contents
+    - _Requirements: 1.3, 2.3, 3.2, 3.6, 4.4, 4.5, 4.6, 5.1, 5.6_
+  - [x] 14.2 Dashboard polling integration
+    - Complete a game from one session, then assert the next `GET /leaderboard` snapshot (within one polling interval) contains the new Score and reflects the updated ranking
+    - _Requirements: 6.1, 6.2_
+  - [x] 14.3 Concurrency integration
+    - Run K concurrent players through full flow; assert leaderboard aggregation and ordering are consistent and contain one entry per player
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
+  - [x] 14.4 Failure-injection integration
+    - Expired session token → 401 and client redirect behavior on frontend adapter; timeout submission → 409/abandoned; duplicate nickname → 409
+    - _Requirements: 1.7, 7.3, 9.2_
+  - [ ]* 14.5 Frontend E2E via Vitest + msw against a mocked backend exercising the full happy path
+    - _Requirements: 1.1, 2.1, 3.1, 4.7_
+
+- [x] 15. Final checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+## Notes
+
+- Tasks marked with `*` are optional; per the user's directive, the following property-based tests are **required** and intentionally not starred: nickname validation (2.3), scoring bounds (5.3, 5.4), points determinism (5.5), leaderboard ordering (6.4), game state machine (4.6), and timeout enforcement (4.8). Required integration tests covering the end-to-end flow (14.1) and dashboard polling (14.2) are also unmarked.
+- Each property-based test task references a Property ID from `design.md` and the requirement clauses it validates.
+- The domain layer (pure functions for validation, state machine, scoring, leaderboard) is implemented and tested before the API and clients, so property tests can run without infrastructure coupling.
+- Server-authoritative timing is enforced by routing all elapsed-time computation through `endedAt - startedAt` in `GameService.complete`; the client-supplied elapsed value is accepted by the endpoint for backward-compat but never influences scoring.

@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: typing-game-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /players
+            pathType: Prefix
+            backend:
+              service:
+                name: typing-game-backend
+                port:
+                  number: 80
+          - path: /games
+            pathType: Prefix
+            backend:
+              service:
+                name: typing-game-backend
+                port:
+                  number: 80
+          - path: /leaderboard
+            pathType: Prefix
+            backend:
+              service:
+                name: typing-game-backend
+                port:
+                  number: 80
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: typing-game-backend
+                port:
+                  number: 80

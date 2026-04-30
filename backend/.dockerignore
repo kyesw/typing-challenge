@@ -1,0 +1,27 @@
+# Dev and test files
+tests/
+.pytest_cache/
+.hypothesis/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Environment
+.env
+*.env
+
+# Documentation
+README.md

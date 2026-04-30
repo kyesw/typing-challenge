@@ -1,0 +1,116 @@
+/*
+ * Typing surface stylesheet — typing-input-highlighting task 3.1.
+ *
+ * Each Character_State pairs a color with at least one non-color cue
+ * (weight, text-decoration, background, or auxiliary glyph) so sighted
+ * users who cannot distinguish the colors still perceive the state
+ * difference (Requirements 2.1–2.4, 7.1; WCAG 1.4.1 "Use of Color").
+ *
+ * The `.char` element is an inline span rendered inside
+ * `[data-testid="play-prompt"]`; the modifier classes (`.char--*`)
+ * correspond 1:1 to the four-valued `CharacterState` enum from
+ * `classifyView`.
+ *
+ * The cursor indicator lives on `.char--current` as a left-edge border
+ * plus background block so it remains visible even when the current
+ * Prompt_Character is whitespace (Requirement 3.1).
+ */
+
+/* Prompt container — a roomy monospace block that line-wraps per glyph
+   span so each Character_Display gets its own layout box. */
+[data-testid="play-prompt"] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 1.25rem;
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0 1rem;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  /* Wrap at word boundaries where possible, but allow long tokens to
+     break so a very long prompt doesn't overflow the container. */
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* Base Character_Display styling — the four state modifiers below layer
+   on top of this. */
+.char {
+  display: inline-block;
+  /* Reserve horizontal space so a cursor border never shifts layout. */
+  padding: 0 1px;
+  border-left: 2px solid transparent;
+  border-radius: 2px;
+  transition: background-color 80ms ease, color 80ms ease;
+}
+
+/* pending — muted gray, default weight, no decoration. Non-color cue:
+   the absence of weight/decoration contrasts with `correct` (bold +
+   underline) and `incorrect` (wavy underline). */
+.char--pending {
+  color: var(--text-secondary);
+  font-weight: 400;
+  text-decoration: none;
+}
+
+/* correct — green color, bold weight, and a thin solid underline.
+   Non-color cues: bold weight and underline decoration distinguish
+   this state from `pending` and `incorrect` even in monochrome. */
+.char--correct {
+  color: var(--accent-green);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* incorrect — red color, wavy underline, and a pale red background.
+   Non-color cues: the wavy underline and background block are
+   distinct from `correct`'s solid underline and from `pending`'s
+   plain treatment, so the typo is recognizable without color. */
+.char--incorrect {
+  color: var(--accent-red);
+  font-weight: 700;
+  text-decoration: underline wavy;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  background-color: rgba(248, 113, 113, 0.15);
+  border-radius: 2px;
+}
+
+/* current — the cursor indicator. A left-edge border plus a pale
+   highlight block makes the Cursor_Position visible even when the
+   current Prompt_Character is whitespace (Requirement 3.1). A slow
+   blink animation adds a motion cue distinct from the decorations
+   used by the other states. */
+.char--current {
+  color: var(--accent-blue);
+  font-weight: 700;
+  background-color: rgba(56, 189, 248, 0.15);
+  border-left: 2px solid var(--accent-blue);
+  border-radius: 0 2px 2px 0;
+  animation: play-cursor-blink 1s steps(2, start) infinite;
+}
+
+@keyframes play-cursor-blink {
+  0%,
+  60% {
+    border-left-color: var(--accent-blue);
+  }
+  61%,
+  100% {
+    border-left-color: transparent;
+  }
+}
+
+/* Respect users who prefer reduced motion — keep the cursor visible
+   without the blink animation (WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  .char--current {
+    animation: none;
+  }
+}
+

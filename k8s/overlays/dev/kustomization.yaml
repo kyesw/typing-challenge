@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+images:
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/typing-game-backend
+    newTag: dev-latest
+
+patches:
+  - path: patches/deployment-patch.yaml
+  - path: patches/configmap-patch.yaml
+  - path: patches/secret-patch.yaml
