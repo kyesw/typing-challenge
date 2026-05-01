@@ -2,14 +2,14 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - deployment.yaml
-  - secrets.yaml
-  - ingress.yaml
+- deployment.yaml
+- secrets.yaml
+- ingress.yaml
 
 images:
-  - name: typing-game-backend
-    newName: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/typing-game-backend
-    newTag: latest
+- name: typing-game-backend
+  newName: 222634400055.dkr.ecr.ap-northeast-2.amazonaws.com/typing-challenge
+  newTag: cb1e9a6cc22f101fa2e05aec03810d6b0cf8c1f7
 
 commonLabels:
   app: typing-game-backend
