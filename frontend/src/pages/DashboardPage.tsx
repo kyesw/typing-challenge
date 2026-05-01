@@ -245,7 +245,7 @@ function LeaderboardTable({
         <tr>
           <th scope="col">Rank</th>
           <th scope="col">Nickname</th>
-          <th scope="col">WPM</th>
+          <th scope="col">Words Per Minute</th>
           <th scope="col">Accuracy</th>
           <th scope="col">Points</th>
         </tr>

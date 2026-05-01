@@ -122,7 +122,7 @@ export function ResultsPage(): JSX.Element {
 
       <dl data-testid="results-stats">
         <div>
-          <dt>WPM</dt>
+          <dt>Words Per Minute</dt>
           <dd data-testid="results-wpm">{formatWpm(handoff.wpm)}</dd>
         </div>
         <div>
