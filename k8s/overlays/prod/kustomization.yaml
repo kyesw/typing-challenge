@@ -11,4 +11,3 @@ images:
 patches:
   - path: patches/deployment-patch.yaml
   - path: patches/configmap-patch.yaml
-  - path: patches/secret-patch.yaml

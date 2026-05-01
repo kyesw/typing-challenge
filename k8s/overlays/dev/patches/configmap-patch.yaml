@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: typing-game-config
-data:
-  TYPING_GAME_ENVIRONMENT: development

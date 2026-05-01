@@ -3,12 +3,13 @@ kind: Kustomization
 
 namespace: typing-game
 
-commonLabels:
-  app: typing-game-backend
+labels:
+  - pairs:
+      app: typing-game-backend
+    includeSelectors: true
 
 resources:
   - deployment.yaml
   - service.yaml
   - configmap.yaml
-  - secret.yaml
   - ingress.yaml
