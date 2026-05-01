@@ -12,7 +12,7 @@ metadata:
     alb.ingress.kubernetes.io/healthcheck-path: /health
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
     alb.ingress.kubernetes.io/subnets: subnet-08891f13d2bc3a3d1,subnet-0b63f6c1258151426
-    alb.ingress.kubernetes.io/security-groups: sg-05654e995732e3493
+    alb.ingress.kubernetes.io/security-groups: sg-0a242d84a07c5c342
 spec:
   rules:
     - http:
