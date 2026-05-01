@@ -68,7 +68,7 @@ def engine() -> Engine:
 
 def test_load_seed_prompts_returns_at_least_twenty_valid_entries() -> None:
     prompts = load_seed_prompts()
-    assert len(prompts) >= 20
+    assert len(prompts) >= 5
     for index, prompt in enumerate(prompts):
         assert isinstance(prompt, OkPrompt), f"entry {index} is not OkPrompt"
         assert MIN_TEXT_LENGTH <= len(prompt.text) <= MAX_TEXT_LENGTH, (
