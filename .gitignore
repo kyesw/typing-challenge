@@ -28,6 +28,5 @@ dist-ssr/
 # Docker
 *.log
 
-# Kubernetes secrets — real credentials should never be committed.
-# The checked-in secret-patch.yaml files contain only base64 placeholders.
-# Override them per-environment with actual values at deploy time.
+# Reference repos
+reference/
