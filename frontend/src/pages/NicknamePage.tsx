@@ -138,6 +138,7 @@ export function NicknamePage(): JSX.Element {
     <main>
       <h1>Typing Game</h1>
       <p>Enter your nickname to begin.</p>
+
       <form onSubmit={handleSubmit} noValidate>
         <label htmlFor="nickname-input">Nickname</label>
         <input
@@ -171,6 +172,12 @@ export function NicknamePage(): JSX.Element {
             {error}
           </p>
         ) : null}
+        <ol className="instructions-list" aria-label="Instructions">
+          <li>Enter a nickname and press Start.<br /><span className="instructions-ko">닉네임을 입력하고 Start를 누르세요.</span></li>
+          <li>A countdown begins, then an English sentence appears.<br /><span className="instructions-ko">카운트다운 후 영어 문장이 표시됩니다.</span></li>
+          <li>Type the sentence exactly as shown.<br /><span className="instructions-ko">화면에 보이는 문장을 그대로 입력하세요.</span></li>
+          <li>Speed and accuracy determine your score.<br /><span className="instructions-ko">속도와 정확도에 따라 점수가 결정됩니다.</span></li>
+        </ol>
       </form>
     </main>
   );
