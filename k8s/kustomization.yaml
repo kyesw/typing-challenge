@@ -10,7 +10,7 @@ resources:
 images:
 - name: typing-game-backend
   newName: 222634400055.dkr.ecr.ap-northeast-2.amazonaws.com/typing-challenge
-  newTag: 21ca27b12677c788132efad8523cbb7be1a05d71
+  newTag: 2a75b5f4b94955c455a719fdda647d4af34b58cf
 
 commonLabels:
   app: typing-game-backend
