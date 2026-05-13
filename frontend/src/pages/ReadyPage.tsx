@@ -15,7 +15,7 @@
  * ``dangerouslySetInnerHTML``.
  */
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -99,7 +99,7 @@ export function ReadyPage(): JSX.Element {
   const navigate = useNavigate();
   const [state, setState] = useState<ReadyState>({ kind: "idle" });
 
-  async function handleStart(): Promise<void> {
+  const handleStart = useCallback(async function handleStart(): Promise<void> {
     if (state.kind === "starting") return;
     setState({ kind: "starting" });
 
@@ -125,14 +125,28 @@ export function ReadyPage(): JSX.Element {
           "Unable to reach the server. Check your connection and try again.",
       });
     }
-  }
+  }, [state.kind, navigate]);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent): void {
+      if (e.key === "Enter") {
+        void handleStart();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleStart]);
 
   const starting = state.kind === "starting";
 
   return (
     <main>
       <h1>Ready?</h1>
-      <p data-testid="ready-placeholder">Press Start when you are ready.</p>
+      <p data-testid="ready-placeholder">
+        Press Start or hit Enter to begin.
+        <br />
+        <span className="instructions-ko">Start 버튼을 누르거나 Enter 키를 누르세요.</span>
+      </p>
       <button
         type="button"
         onClick={() => void handleStart()}
